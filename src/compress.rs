@@ -1,18 +1,23 @@
 pub mod huffman {
-    use std::boxed::Box;
-    use std::cmp::Ordering;
-    use std::cmp::Ord;
-    use std::collections::*;
+	use std::boxed::Box;
+	use std::cmp::Ordering;
+	use std::collections::*;
 
-    ///	Node is a binary tree data structure.
+	///	Node is a binary tree data structure.
 	///	It will be used by huffman compression algorithm
-    #[derive(Clone, PartialEq, Eq, Ord, std::fmt::Debug)]
+	#[derive(Clone, PartialEq, Eq, Ord, std::fmt::Debug)]
     struct Node {
         letter: char,
         freq: i32,
         left: Option<Box<Node>>,
         right: Option<Box<Node>>,
     }
+    impl PartialOrd for Node {
+		fn partial_cmp(self: &Node, other: &Node) -> Option<Ordering> {
+			let cmp = self.freq.cmp(&other.freq);
+			Some(cmp.reverse()) // For min heap
+		}
+	}
     impl Node {
         // create a leaf node
         fn new (letter:char, freq:i32)->Node{
@@ -24,6 +29,7 @@ pub mod huffman {
             }
         }
     }
+
     fn freq_count(text: std::str::Chars)->Vec<Node>{
         let mut freq_vec = Vec::new();
         let mut chars: Vec<char> = text.collect();
@@ -48,7 +54,7 @@ pub mod huffman {
             pq.push(node);
         }
         while pq.len()>1 {
-            let (a,b) = (pq.pop().unwrap,pq.pop().unwrap());
+            let (a,b) = (pq.pop().unwrap(), pq.pop().unwrap());
             let new_node = Node {
                 letter: '\0',
                 freq: a.freq + b.freq,
@@ -97,6 +103,8 @@ pub mod huffman {
            }
            output_str.push(node.letter);
         }
+        post_order(huffman_node, &mut output);
+		return output;
     }
     // Convert huffman tree to vector of bytes
 	//
@@ -122,7 +130,7 @@ pub mod huffman {
 
         let huffman_map = to_hashmap(huffman_node);
         for c in text.chars(){
-            let encoding = huffman_map.get(&c).unwrap;
+            let encoding = huffman_map.get(&c).unwrap();
             for e in encoding.bytes(){
                 let bit: bool = (e - '0' as u8) != 0;
                 byte = byte << 1 | (bit as u8);
@@ -179,9 +187,50 @@ pub mod huffman {
                 });
             }
         }
-        stack.pop().unwrap();
+        stack.pop().unwrap()
     }
 
-    fn decompress_data(){}
-    pub fn decompress(){}
+    fn decompress_data(data:&[u8], tree:&Node)->String{
+        let padding = *data.first().expect("Data empty");
+        let data = &data[1..];  // Remove first element which stores number of padded bits
+        let mut bit_stream = Vec::new();
+        let mut tmp = tree;
+        let mut output = String::new();
+        for character in data.iter(){
+            let mut character = *character;
+            for _ in 0..8 {
+                let bit: bool = (character>>7&1) != 0;
+                character <<= 1;
+                bit_stream.push(bit);
+            }
+        }
+        bit_stream.resize(bit_stream.len() - padding as usize, false); // Remove padding bits
+        if tree.left.is_none(){
+            // Huffman tree is complete binary tree, a node will have either 0 or 2 children, 1 is not possible
+            for _ in 0..bit_stream.len() {
+                output.push(tree.letter);
+            }
+        }
+        for &bit in &bit_stream {
+            if tmp.left.is_none() {
+                output.push(tmp.letter);
+                tmp = tree;
+            }
+            let right: &Node = tmp.right.as_ref().unwrap().as_ref();
+			let left: &Node = tmp.left.as_ref().unwrap().as_ref();
+			tmp = if bit { right } else { left };
+		}
+		if tmp != tree {
+			output.push(tmp.letter);
+		}
+		return output;
+    }
+    
+    pub fn decompress(data: &Vec<u8>) -> String {
+		let post_order_length = *data.first().expect("Data cannot be empty") as usize;
+		let post_order = &data[1..=post_order_length];
+		let huffman_tree = construct_tree_from_postorder(post_order);
+		let data = &data[post_order_length + 1..];
+		decompress_data(data, &huffman_tree)
+	}
 }
