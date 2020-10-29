@@ -1,7 +1,7 @@
-# Huffman-Compression-in-Rust
+# rusty-huffman
 
 ## About
-
+Huffman-Compression-in-Rust
 A simple command line tool to compress file via Huffman Algorithm.
 
 ## Try it! (How to use it?)
