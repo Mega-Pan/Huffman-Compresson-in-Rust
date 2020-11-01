@@ -7,7 +7,7 @@ A simple command line tool to compress file via Huffman Algorithm.
 ## Try it! (How to use it?)
 - Clone directory to local 
 ```shell
-$ git clone https://github.com/Mega-Pan/Huffman-Compresson-in-Rust && cd Huffman-Compresson-in-Rust
+$ git clone https://github.com/yppan/rusty-huffman-unicode/ && cd rusty-huffman-unicode/
 ```
 
 - Encode(Compress):
