@@ -1,4 +1,4 @@
-# rusty-huffman
+# rusty-huffman-unicode
 
 ## About
 Huffman-Compression-in-Rust
